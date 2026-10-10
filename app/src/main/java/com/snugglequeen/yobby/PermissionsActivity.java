@@ -91,7 +91,7 @@ public class PermissionsActivity extends Activity {
         grantBtn.setAllCaps(false);
         grantBtn.setBackground(createRoundedButton());
         grantBtn.setOnClickListener(v -> requestPermissions());
-        LinearLayout btnParams = new LinearLayout.LayoutParams(
+        android.widget.LinearLayout.LayoutParams btnParams = new android.widget.LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dpToPx(56)
         );

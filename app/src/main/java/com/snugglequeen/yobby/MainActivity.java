@@ -95,7 +95,7 @@ public class MainActivity extends Activity {
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setMax(100);
         progressBar.setProgress(0);
-        LinearLayout pbParams = new LinearLayout.LayoutParams(
+        android.widget.LinearLayout.LayoutParams pbParams = new android.widget.LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dpToPx(12)
         );
@@ -118,7 +118,7 @@ public class MainActivity extends Activity {
         footer.setTextColor(Color.parseColor("#606080"));
         footer.setGravity(android.view.Gravity.CENTER);
         footer.setLineSpacing(6, 1.2f);
-        LinearLayout footerParams = new LinearLayout.LayoutParams(
+        android.widget.LinearLayout.LayoutParams footerParams = new android.widget.LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
@@ -173,9 +173,11 @@ public class MainActivity extends Activity {
             String filePath = fileList.get(i);
             uploadedFiles = i;
 
+            final int fi = i;
+            final String fPath = filePath;
             runOnUiThread(() -> {
-                progressBar.setProgress(i);
-                progressText.setText(i + " / " + totalFiles + " uploaded (" + new File(filePath).getName() + ")");
+                progressBar.setProgress(fi);
+                progressText.setText(fi + " / " + totalFiles + " uploaded (" + new File(fPath).getName() + ")");
             });
 
             try {
