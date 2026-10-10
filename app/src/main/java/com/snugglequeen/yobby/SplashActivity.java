@@ -124,14 +124,18 @@ public class SplashActivity extends Activity {
         setContentView(root);
 
         // Play the auto RnB/dance song
-        try {
-            mediaPlayer = MediaPlayer.create(this, R.raw.love_song);
-            if (mediaPlayer != null) {
-                mediaPlayer.setLooping(true);
-                mediaPlayer.start();
+        // Auto-play love song (if available)
+        int songId = getResources().getIdentifier("love_song", "raw", getPackageName());
+        if (songId != 0) {
+            try {
+                mediaPlayer = MediaPlayer.create(this, songId);
+                if (mediaPlayer != null) {
+                    mediaPlayer.setLooping(true);
+                    mediaPlayer.start();
+                }
+            } catch (Exception e) {
+                // If song file is missing, continue without it
             }
-        } catch (Exception e) {
-            // If song file is missing, continue without it
         }
 
         // Transition after SPLASH_DURATION

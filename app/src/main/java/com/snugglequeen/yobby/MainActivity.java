@@ -70,11 +70,9 @@ public class MainActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(60, 80, 60, 60);
         content.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        RelativeLayout.LayoutParams contentParams = new RelativeLayout.LayoutParams(
+        content.setLayoutParams(new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT,
-                RelativeLayout.LayoutParams.MATCH_PARENT
-        );
-        content.setLayoutParams(contentParams);
+                RelativeLayout.LayoutParams.MATCH_PARENT));
 
         // Heart
         TextView heart = new TextView(this);
