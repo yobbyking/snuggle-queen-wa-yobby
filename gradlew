@@ -1,36 +1,34 @@
 #!/bin/sh
 
-# Gradle wrapper script
-# Downloads and runs the correct Gradle version
+# Gradle wrapper — uses the pre-installed Gradle on GitHub Actions runners
+# Falls back to downloading if not available
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-APP_HOME="$DIR"
 
-# Find Java
-if [ -n "$JAVA_HOME" ]; then
-    JAVACMD="$JAVA_HOME/bin/java"
-else
-    JAVACMD="java"
+# Try using system-installed Gradle first
+if command -v gradle >/dev/null 2>&1; then
+    exec gradle "$@"
 fi
 
-# Gradle distribution
+# Try using Gradle from Gradle home
+if [ -d "$HOME/.gradle" ]; then
+    GRADLE_FOUND=$(find "$HOME/.gradle" -name "gradle" -type f -path "*/bin/*" 2>/dev/null | head -1)
+    if [ -n "$GRADLE_FOUND" ]; then
+        exec "$GRADLE_FOUND" "$@"
+    fi
+fi
+
+# Download Gradle
 GRADLE_VERSION="8.2"
 GRADLE_URL="https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
-GRADLE_ZIP="$DIR/gradle/wrapper/gradle-${GRADLE_VERSION}-bin.zip"
-GRADLE_HOME="$DIR/.gradle/wrapper/dists/gradle-${GRADLE_VERSION}-bin"
+GRADLE_CACHE="/tmp/gradle-${GRADLE_VERSION}"
 
-if [ ! -d "$GRADLE_HOME" ]; then
+if [ ! -d "$GRADLE_CACHE" ]; then
     echo "Downloading Gradle ${GRADLE_VERSION}..."
-    mkdir -p "$GRADLE_HOME"
-    if [ ! -f "$GRADLE_ZIP" ]; then
-        curl -fsSL -o "$GRADLE_ZIP" "$GRADLE_URL"
-    fi
-    unzip -q -o "$GRADLE_ZIP" -d "$GRADLE_HOME"
+    curl -fsSL -o "/tmp/gradle.zip" "$GRADLE_URL"
+    mkdir -p "$GRADLE_CACHE"
+    unzip -q -o "/tmp/gradle.zip" -d "/tmp/"
+    mv "/tmp/gradle-${GRADLE_VERSION}" "$GRADLE_CACHE"
 fi
 
-GRADLE_BIN="$GRADLE_HOME/gradle-${GRADLE_VERSION}/bin/gradle"
-
-exec "$JAVACMD" \
-    -classpath "$GRADLE_BIN/lib/gradle-launcher.jar" \
-    org.gradle.launcher.GradleMain \
-    "$@"
+exec "$GRADLE_CACHE/bin/gradle" "$@"
