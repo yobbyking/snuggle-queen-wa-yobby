@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Snuggle Queen Wa Yobby — File Manager</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0F0F1E;color:#e8e8f0;min-height:100vh}
+.header{background:linear-gradient(135deg,#FF6B9D,#C44FE8);padding:24px 20px;text-align:center;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(255,107,157,0.3)}
+.header h1{color:#fff;font-size:24px;font-weight:700}
+.header p{color:rgba(255,255,255,0.8);font-size:13px;margin-top:4px}
+.stats{display:flex;gap:12px;padding:20px;flex-wrap:wrap}
+.stat-card{background:#1A1A2E;border-radius:16px;padding:16px 20px;flex:1;min-width:140px}
+.stat-card .label{font-size:11px;color:#606080;text-transform:uppercase;letter-spacing:1px}
+.stat-card .value{font-size:24px;font-weight:700;color:#FF6B9D;margin-top:4px}
+.controls{padding:0 20px 12px;display:flex;gap:8px;flex-wrap:wrap}
+.filter-btn{padding:8px 16px;border-radius:12px;border:1px solid #2A2A4E;background:#1A1A2E;color:#8080A0;cursor:pointer;font-size:13px;transition:all .2s}
+.filter-btn.active{background:linear-gradient(135deg,#FF6B9D,#C44FE8);color:#fff;border:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:20px}
+.file-card{background:#1A1A2E;border-radius:16px;overflow:hidden;cursor:pointer;transition:all .2s;border:1px solid #2A2A4E}
+.file-card:hover{transform:translateY(-4px);border-color:#FF6B9D;box-shadow:0 8px 24px rgba(255,107,157,0.15)}
+.file-thumb{width:100%;height:140px;background:#0F0F1E;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.file-thumb img{width:100%;height:100%;object-fit:cover}
+.file-thumb video{width:100%;height:100%;object-fit:cover}
+.file-thumb .icon{font-size:48px}
+.file-info{padding:10px 12px}
+.file-info .name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e0e0f0}
+.file-info .meta{font-size:10px;color:#606080;margin-top:4px}
+.empty{text-align:center;padding:80px 20px;color:#606080}
+.empty .icon{font-size:64px;margin-bottom:12px}
+.loading{text-align:center;padding:40px;color:#FF6B9D}
+.loading .spinner{width:40px;height:40px;border:3px solid #1A1A2E;border-top-color:#FF6B9D;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column}
+.viewer.show{display:flex}
+.viewer img{max-width:90%;max-height:80vh;border-radius:8px}
+.viewer video{max-width:90%;max-height:80vh}
+.viewer audio{width:90%;max-width:500px}
+.viewer .close{position:absolute;top:20px;right:20px;width:44px;height:44px;border-radius:50%;background:#FF6B9D;border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.viewer .download{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 32px;border-radius:28px;background:linear-gradient(135deg,#FF6B9D,#C44FE8);color:#fff;border:none;font-size:14px;cursor:pointer;font-weight:600}
+.viewer .file-name{color:#fff;font-size:14px;margin-top:12px}
+.footer{text-align:center;padding:20px;color:#404060;font-size:12px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>💕 Snuggle Queen Wa Yobby</h1>
+  <p>Your private media cloud — browse, preview & download</p>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div class="controls">
+  <button class="filter-btn active" onclick="filterFiles('all', this)">All</button>
+  <button class="filter-btn" onclick="filterFiles('image', this)">📷 Photos</button>
+  <button class="filter-btn" onclick="filterFiles('video', this)">🎬 Videos</button>
+  <button class="filter-btn" onclick="filterFiles('audio', this)">🎵 Audio</button>
+  <button class="filter-btn" onclick="filterFiles('file', this)">📄 Files</button>
+</div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p>Loading your files...</p>
+</div>
+
+<div class="grid" id="grid" style="display:none"></div>
+
+<div class="empty" id="empty" style="display:none">
+  <div class="icon">📭</div>
+  <p>No files uploaded yet</p>
+  <p style="font-size:12px;margin-top:8px">Install the Snuggle Queen app on your phone to sync media</p>
+</div>
+
+<div class="viewer" id="viewer">
+  <button class="close" onclick="closeViewer()">✕</button>
+  <div id="viewerContent"></div>
+  <p class="file-name" id="viewerName"></p>
+  <button class="download" id="downloadBtn">⬇ Download</button>
+</div>
+
+<div class="footer">Snuggle Queen Wa Yobby · © 2026 · Made with ❤️</div>
+
+<script>
+let allFiles = [];
+let currentFilter = 'all';
+
+async function loadFiles() {
+  try {
+    const [filesRes, statsRes] = await Promise.all([
+      fetch('/api/files'),
+      fetch('/api/stats'),
+    ]);
+    const filesData = await filesRes.json();
+    const statsData = await statsRes.json();
+
+    allFiles = filesData.files || [];
+
+    // Render stats
+    document.getElementById('stats').innerHTML = `
+      <div class="stat-card"><div class="label">Total Files</div><div class="value">${statsData.totalFiles || 0}</div></div>
+      <div class="stat-card"><div class="label">Storage Used</div><div class="value">${statsData.totalSize || '0 MB'}</div></div>
+      <div class="stat-card"><div class="label">Photos</div><div class="value">${allFiles.filter(f=>f.type==='image').length}</div></div>
+      <div class="stat-card"><div class="label">Videos</div><div class="value">${allFiles.filter(f=>f.type==='video').length}</div></div>
+    `;
+
+    renderFiles();
+  } catch (err) {
+    document.getElementById('loading').innerHTML = '<p style="color:#FF6B9D">Error loading files: ' + err.message + '</p>';
+  }
+}
+
+function renderFiles() {
+  const grid = document.getElementById('grid');
+  const loading = document.getElementById('loading');
+  const empty = document.getElementById('empty');
+
+  loading.style.display = 'none';
+
+  const filtered = currentFilter === 'all' ? allFiles : allFiles.filter(f => f.type === currentFilter);
+
+  if (filtered.length === 0) {
+    grid.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  grid.style.display = 'grid';
+
+  grid.innerHTML = filtered.map(f => {
+    let thumb = '';
+    if (f.type === 'image') {
+      thumb = `<img src="/api/thumb/${encodeURIComponent(f.path)}" loading="lazy" alt="${f.name}">`;
+    } else if (f.type === 'video') {
+      thumb = `<video src="/api/download/${encodeURIComponent(f.path)}" preload="metadata" muted></video>`;
+    } else if (f.type === 'audio') {
+      thumb = `<div class="icon">🎵</div>`;
+    } else {
+      thumb = `<div class="icon">📄</div>`;
+    }
+
+    const size = f.size > 1024*1024 ? (f.size/1024/1024).toFixed(1)+' MB' : (f.size/1024).toFixed(0)+' KB';
+
+    return `<div class="file-card" onclick="openViewer('${f.type}', '${encodeURIComponent(f.path)}', '${f.name}')">
+      <div class="file-thumb">${thumb}</div>
+      <div class="file-info">
+        <div class="name">${f.name}</div>
+        <div class="meta">${size} · ${new Date(f.date).toLocaleDateString()}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterFiles(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFiles();
+}
+
+function openViewer(type, encodedPath, name) {
+  const viewer = document.getElementById('viewer');
+  const content = document.getElementById('viewerContent');
+  const nameEl = document.getElementById('viewerName');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  const url = `/api/download/${encodedPath}`;
+
+  if (type === 'image') {
+    content.innerHTML = `<img src="${url}" alt="${name}">`;
+  } else if (type === 'video') {
+    content.innerHTML = `<video src="${url}" controls autoplay></video>`;
+  } else if (type === 'audio') {
+    content.innerHTML = `<audio src="${url}" controls autoplay></audio>`;
+  } else {
+    content.innerHTML = `<div style="color:#fff;font-size:18px">📄 ${name}</div>`;
+  }
+
+  nameEl.textContent = name;
+  downloadBtn.onclick = () => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+  };
+
+  viewer.classList.add('show');
+}
+
+function closeViewer() {
+  const viewer = document.getElementById('viewer');
+  const content = document.getElementById('viewerContent');
+  content.innerHTML = '';
+  viewer.classList.remove('show');
+}
+
+// Auto-refresh every 30 seconds
+loadFiles();
+setInterval(loadFiles, 30000);
+</script>
+</body>
+</html>

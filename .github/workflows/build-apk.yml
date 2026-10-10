@@ -1,0 +1,50 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools-version: '34.0.0'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+        working-directory: .
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon -x test
+        env:
+          JAVA_OPTS: "-Xmx2048m"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snuggle-queen-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Release APK
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          files: app/build/outputs/apk/debug/app-debug.apk
+          name: "Snuggle Queen Wa Yobby v1.0"
+          body: "💕 Snuggle Queen Wa Yobby APK — install on Android 7+ to sync your media files to the cloud."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
