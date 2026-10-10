@@ -189,6 +189,52 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'snuggle-queen-backend' });
 });
 
+// History endpoint — chronological list of ALL files across all devices
+app.get('/api/history', (req, res) => {
+  const allFiles = [];
+
+  function scanDir(dir, deviceId = '', deviceName = '') {
+    if (!fs.existsSync(dir)) return;
+    for (const item of fs.readdirSync(dir)) {
+      const fullPath = path.join(dir, item);
+      const stat = fs.statSync(fullPath);
+      if (stat.isDirectory()) {
+        // Check if this is a device folder (has device_info.json)
+        const infoFile = path.join(fullPath, 'device_info.json');
+        let dn = deviceName;
+        if (fs.existsSync(infoFile)) {
+          try { dn = JSON.parse(fs.readFileSync(infoFile, 'utf-8')).deviceName || dn; } catch {}
+        }
+        scanDir(fullPath, deviceId || item, dn);
+      } else if (item !== 'device_info.json') {
+        const ext = path.extname(item).toLowerCase();
+        const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
+        const isVideo = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.3gp'].includes(ext);
+        const isAudio = ['.mp3', '.ogg', '.wav', '.m4a', '.aac', '.flac'].includes(ext);
+        const relPath = path.relative(UPLOAD_DIR, fullPath);
+        allFiles.push({
+          name: item,
+          path: relPath,
+          size: stat.size,
+          date: stat.mtime,
+          type: isImage ? 'image' : isVideo ? 'video' : isAudio ? 'audio' : 'file',
+          deviceName,
+          deviceId,
+          url: `/api/download/${encodeURIComponent(relPath)}`,
+        });
+      }
+    }
+  }
+  scanDir(UPLOAD_DIR);
+  allFiles.sort((a, b) => new Date(b.date) - new Date(a.date));
+  res.json({ files: allFiles, total: allFiles.length });
+});
+
+// Public history page — shows ALL uploaded files permanently, chronologically
+app.get('/history', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'history.html'));
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

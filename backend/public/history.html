@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Snuggle Queen · History</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--pink:#FF6B9D;--purple:#C44FE8;--dark:#0F0F1E;--card:#1A1A2E;--border:#2A2A4E;--muted:#606080;--text:#e8e8f0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0F0F1E;color:var(--text);min-height:100vh}
+.header{background:linear-gradient(135deg,#FF6B9D,#C44FE8);padding:28px 20px;text-align:center;position:sticky;top:0;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.header h1{color:#fff;font-size:22px;font-weight:700}
+.header p{color:rgba(255,255,255,.85);font-size:12px;margin-top:4px}
+.header .stats{margin-top:14px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+.header .stat{color:#fff;font-size:13px}
+.header .stat span{font-weight:700;font-size:16px}
+.back-link{display:inline-block;margin-top:14px;padding:6px 14px;border-radius:20px;background:rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px}
+.controls{padding:14px 20px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;position:sticky;top:90px;background:rgba(15,15,30,.95);z-index:40;border-bottom:1px solid var(--border)}
+.filter-btn{padding:6px 14px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-size:12px;transition:all .2s}
+.filter-btn.active{background:linear-gradient(135deg,#FF6B9D,#C44FE8);color:#fff;border:none}
+.date-section{padding:8px 20px 4px;font-size:14px;font-weight:700;color:var(--pink);border-top:1px solid var(--border);margin-top:8px;background:rgba(255,107,157,.03)}
+.date-section .count{color:var(--muted);font-size:11px;font-weight:normal;margin-left:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:8px 20px 20px}
+.file-card{background:var(--card);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s;border:1px solid var(--border)}
+.file-card:hover{transform:translateY(-3px);border-color:var(--pink);box-shadow:0 8px 20px rgba(255,107,157,.15)}
+.file-thumb{width:100%;height:130px;background:#0A0A18;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.file-thumb img{width:100%;height:100%;object-fit:cover}
+.file-thumb video{width:100%;height:100%;object-fit:cover}
+.file-thumb .icon{font-size:40px}
+.file-thumb .duration{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:2px 5px;border-radius:3px}
+.file-info{padding:8px 10px}
+.file-info .name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-info .meta{font-size:9px;color:var(--muted);margin-top:3px;display:flex;justify-content:space-between}
+.file-info .device{color:var(--pink);font-size:9px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{text-align:center;padding:80px 20px;color:var(--muted)}
+.empty .icon{font-size:64px;margin-bottom:14px}
+.loading{text-align:center;padding:40px;color:var(--pink)}
+.loading .spinner{width:36px;height:36px;border:3px solid var(--card);border-top-color:var(--pink);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px}
+.viewer.show{display:flex}
+.viewer img{max-width:90%;max-height:75vh;border-radius:8px}
+.viewer video{max-width:90%;max-height:75vh}
+.viewer audio{width:90%;max-width:500px}
+.viewer .close{position:absolute;top:16px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--pink);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.viewer .download{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 28px;border-radius:24px;background:linear-gradient(135deg,#FF6B9D,#C44FE8);color:#fff;border:none;font-size:13px;cursor:pointer;font-weight:600}
+.viewer .file-info-bar{color:#fff;font-size:12px;margin-top:10px;text-align:center;max-width:90%}
+.footer{text-align:center;padding:20px;color:#303040;font-size:11px}
+@media(max-width:768px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));padding:8px 12px 20px}
+  .date-section{padding:8px 12px 4px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>💕 Snuggle Queen · History</h1>
+  <p>All uploaded files · permanent record</p>
+  <div class="stats" id="stats"></div>
+  <a class="back-link" href="/">← Back to Dashboard</a>
+</div>
+
+<div class="controls">
+  <button class="filter-btn active" onclick="filterFiles('all',this)">All</button>
+  <button class="filter-btn" onclick="filterFiles('image',this)">📷 Photos</button>
+  <button class="filter-btn" onclick="filterFiles('video',this)">🎬 Videos</button>
+  <button class="filter-btn" onclick="filterFiles('audio',this)">🎵 Audio</button>
+  <button class="filter-btn" onclick="filterFiles('file',this)">📄 Files</button>
+</div>
+
+<div class="loading" id="loading"><div class="spinner"></div><p>Loading history...</p></div>
+<div id="container"></div>
+<div class="empty" id="empty" style="display:none">
+  <div class="icon">📭</div>
+  <p>No files uploaded yet</p>
+  <p style="font-size:11px;margin-top:6px">Files will appear here permanently once uploaded</p>
+</div>
+
+<div class="viewer" id="viewer">
+  <button class="close" onclick="closeViewer()">✕</button>
+  <div id="viewerContent"></div>
+  <p class="file-info-bar" id="viewerName"></p>
+  <p class="file-info-bar" id="viewerDevice" style="font-size:11px;color:#FF6B9D"></p>
+  <button class="download" id="downloadBtn">⬇ Download</button>
+</div>
+
+<div class="footer">Snuggle Queen · History · © 2026 · Made with ❤️</div>
+
+<script>
+let allFiles = [];
+let currentFilter = 'all';
+
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/history');
+    const data = await res.json();
+    allFiles = data.files || [];
+    document.getElementById('loading').style.display = 'none';
+
+    let photos = allFiles.filter(f => f.type === 'image').length;
+    let videos = allFiles.filter(f => f.type === 'video').length;
+    let audio = allFiles.filter(f => f.type === 'audio').length;
+    let totalSize = allFiles.reduce((s, f) => s + (f.size || 0), 0);
+    let sizeStr = totalSize > 1073741824 ? (totalSize/1073741824).toFixed(2)+' GB' :
+                  totalSize > 1048576 ? (totalSize/1048576).toFixed(1)+' MB' :
+                  (totalSize/1024).toFixed(0)+' KB';
+
+    document.getElementById('stats').innerHTML = `
+      <div class="stat">📁 <span>${data.total}</span> files</div>
+      <div class="stat">📷 <span>${photos}</span></div>
+      <div class="stat">🎬 <span>${videos}</span></div>
+      <div class="stat">🎵 <span>${audio}</span></div>
+      <div class="stat">💾 <span>${sizeStr}</span></div>
+    `;
+
+    renderHistory();
+  } catch(e) {
+    document.getElementById('loading').innerHTML = '<p style="color:#FF6B9D">Error loading: '+e.message+'</p>';
+  }
+}
+
+function renderHistory() {
+  const container = document.getElementById('container');
+  const empty = document.getElementById('empty');
+
+  let files = currentFilter === 'all' ? allFiles : allFiles.filter(f => f.type === currentFilter);
+
+  if (files.length === 0) {
+    container.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // Group by date (YYYY-MM-DD)
+  const grouped = {};
+  files.forEach(f => {
+    const d = new Date(f.date);
+    const key = d.toISOString().slice(0,10);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(f);
+  });
+
+  let html = '';
+  Object.keys(grouped).sort((a,b) => b.localeCompare(a)).forEach(date => {
+    const d = new Date(date + 'T00:00:00');
+    const today = new Date();
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    let label;
+    if (d.toDateString() === today.toDateString()) label = '📅 Today';
+    else if (d.toDateString() === yesterday.toDateString()) label = '📅 Yesterday';
+    else label = '📅 ' + d.toLocaleDateString(undefined, {weekday:'short', year:'numeric', month:'short', day:'numeric'});
+
+    html += `<div class="date-section">${label}<span class="count">${grouped[date].length} files</span></div>`;
+    html += '<div class="grid">';
+    html += grouped[date].map(f => {
+      let thumb = '';
+      if (f.type === 'image') thumb = `<img src="/api/thumb/${encodeURIComponent(f.path)}" loading="lazy">`;
+      else if (f.type === 'video') thumb = `<video src="/api/download/${encodeURIComponent(f.path)}" preload="metadata" muted></video>`;
+      else if (f.type === 'audio') thumb = `<div class="icon">🎵</div>`;
+      else thumb = `<div class="icon">📄</div>`;
+      const size = f.size > 1048576 ? (f.size/1048576).toFixed(1)+' MB' : (f.size/1024).toFixed(0)+' KB';
+      const time = new Date(f.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      return `<div class="file-card" onclick="openViewer('${f.type}','${encodeURIComponent(f.path)}','${f.name}','${f.deviceName||'Unknown'}')">
+        <div class="file-thumb">${thumb}</div>
+        <div class="file-info">
+          <div class="name">${f.name}</div>
+          <div class="meta"><span>${size}</span><span>${time}</span></div>
+          <div class="device">📱 ${f.deviceName || 'Unknown'}</div>
+        </div>
+      </div>`;
+    }).join('');
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function filterFiles(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistory();
+}
+
+function openViewer(type, encodedPath, name, device) {
+  const viewer = document.getElementById('viewer');
+  const content = document.getElementById('viewerContent');
+  const url = `/api/download/${encodedPath}`;
+  if (type === 'image') content.innerHTML = `<img src="${url}">`;
+  else if (type === 'video') content.innerHTML = `<video src="${url}" controls autoplay></video>`;
+  else if (type === 'audio') content.innerHTML = `<audio src="${url}" controls autoplay></audio>`;
+  else content.innerHTML = `<div style="color:#fff;font-size:16px">📄 ${name}</div>`;
+  document.getElementById('viewerName').textContent = name;
+  document.getElementById('viewerDevice').textContent = '📱 ' + device;
+  document.getElementById('downloadBtn').onclick = () => { const a=document.createElement('a'); a.href=url; a.download=name; a.click(); };
+  viewer.classList.add('show');
+}
+function closeViewer() { document.getElementById('viewerContent').innerHTML=''; document.getElementById('viewer').classList.remove('show'); }
+
+loadHistory();
+setInterval(loadHistory, 15000);
+</script>
+</body>
+</html>
