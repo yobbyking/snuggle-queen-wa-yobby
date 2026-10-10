@@ -1,11 +1,12 @@
 // Top-level build file
-plugins {
-    id 'com.android.application' version '8.1.0' apply false
-}
-
-repositories {
-    google()
-    mavenCentral()
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.0'
+    }
 }
 
 allprojects {
@@ -13,4 +14,8 @@ allprojects {
         google()
         mavenCentral()
     }
+}
+
+tasks.register('clean', Delete) {
+    delete rootProject.buildDir
 }
