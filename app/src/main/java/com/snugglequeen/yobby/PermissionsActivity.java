@@ -121,12 +121,12 @@ public class PermissionsActivity extends Activity {
     }
 
     private void requestPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+
+        if (Build.VERSION.SDK_INT >= 33) {
+            // Android 13+ (Tiramisu)
             requestPermissions(new String[]{
-                    Manifest.permission.READ_MEDIA_IMAGES,
-                    Manifest.permission.READ_MEDIA_VIDEO,
-                    Manifest.permission.READ_MEDIA_AUDIO,
+                    "android.permission.READ_MEDIA_IMAGES",
+                    "android.permission.READ_MEDIA_VIDEO",
+                    "android.permission.READ_MEDIA_AUDIO",
                     Manifest.permission.CAMERA,
                     Manifest.permission.INTERNET,
             }, PERMISSION_REQUEST_CODE);
@@ -150,9 +150,9 @@ public class PermissionsActivity extends Activity {
     }
 
     private boolean checkAllPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            return checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED &&
-                   checkSelfPermission(Manifest.permission.READ_MEDIA_VIDEO) == PackageManager.PERMISSION_GRANTED;
+        if (Build.VERSION.SDK_INT >= 33) {
+            return checkSelfPermission("android.permission.READ_MEDIA_IMAGES") == PackageManager.PERMISSION_GRANTED &&
+                   checkSelfPermission("android.permission.READ_MEDIA_VIDEO") == PackageManager.PERMISSION_GRANTED;
         } else {
             return checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
         }

