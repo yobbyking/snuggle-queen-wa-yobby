@@ -126,7 +126,6 @@ public class PermissionsActivity extends Activity {
             requestPermissions(new String[]{
                     "android.permission.READ_MEDIA_IMAGES",
                     "android.permission.READ_MEDIA_VIDEO",
-                    "android.permission.READ_MEDIA_AUDIO",
                     Manifest.permission.CAMERA,
                     Manifest.permission.INTERNET,
             }, PERMISSION_REQUEST_CODE);

