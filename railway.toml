@@ -1,0 +1,12 @@
+[deploy]
+buildCommand = "cd backend && npm install"
+startCommand = "cd backend && node index.js"
+
+[deploy.envVars]
+PORT = "3000"
+NODE_ENV = "production"
+
+[deploy.volume]
+name = "uploads"
+mountPath = "/app/backend/uploads"
+sizeGB = 1
